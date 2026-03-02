@@ -124,6 +124,12 @@ export default function ContentManagementPage() {
                     .order('order_index', { ascending: true });
                 if (galleryData) setGallery(galleryData);
 
+                // Fetch Inquiries separately
+                const { data: inquiryData } = await insforge.database
+                    .from('contact_inquiries')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
                 if (inquiryData) {
                     setInquiries(inquiryData);
                 }

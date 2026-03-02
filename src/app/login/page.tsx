@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Scale, Loader2, ArrowRight } from 'lucide-react';
@@ -13,24 +13,41 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
-    const supabase = createClient();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        try {
+            const { data, error: loginError } = await insforge.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        if (loginError) {
-            setError(loginError.message);
+            console.log("LOGIN RESPONSE:", data, loginError);
+
+            if (loginError) {
+                setError(loginError.message);
+                return;
+            }
+
+            if (data?.accessToken) {
+                // ✅ Store session manually (VERY IMPORTANT for Insforge)
+                localStorage.setItem("access_token", data.accessToken);
+                if (data.refreshToken) {
+                    localStorage.setItem("refresh_token", data.refreshToken);
+                }
+
+                router.push('/dashboard');
+                router.refresh();
+            } else {
+                setError("Login failed: No session data returned.");
+            }
+        } catch (err: any) {
+            setError(err.message || "An unexpected error occurred");
+        } finally {
             setLoading(false);
-        } else {
-            router.push('/dashboard');
-            router.refresh();
         }
     };
 

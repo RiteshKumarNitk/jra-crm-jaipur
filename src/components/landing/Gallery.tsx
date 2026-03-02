@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { BookOpen } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 const GALLERY_FALLBACK = [
     "https://images.unsplash.com/photo-1505664194779-8beaceb93744",
@@ -15,15 +15,14 @@ const GALLERY_FALLBACK = [
 const Gallery = () => {
     const [images, setImages] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchGallery = async () => {
             try {
-                const { data } = await supabase
+                const { data } = await insforge.database
                     .from('gallery_items')
                     .select('*')
-                    .order('order_index');
+                    .order('order_index', { ascending: true });
                 if (data && data.length > 0) {
                     setImages(data.map((item: any) => item.image_url));
                 } else {
@@ -36,7 +35,7 @@ const Gallery = () => {
             }
         };
         fetchGallery();
-    }, []); // Removed supabase from dependencies to prevent infinite loop
+    }, []);
 
     if (isLoading) return null;
 

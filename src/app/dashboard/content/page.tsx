@@ -22,8 +22,7 @@ import {
     Building2,
     ExternalLink
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { insforge } from '@/utils/insforge/client';
+import { insforge } from '@/utils/insforge';
 
 const TABS = [
     { id: 'hero', name: 'Hero Sliders', icon: ImageIcon },
@@ -53,15 +52,13 @@ export default function ContentManagementPage() {
     const [inquiries, setInquiries] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const supabase = createClient();
-
     // Load Initial Data
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
                 // Fetch Hero
-                const { data: heroData } = await supabase
+                const { data: heroData } = await insforge.database
                     .from('website_content')
                     .select('content')
                     .eq('section', 'hero')
@@ -76,7 +73,7 @@ export default function ContentManagementPage() {
                 }
 
                 // Fetch Homepage Core
-                const { data: homeContentData } = await supabase
+                const { data: homeContentData } = await insforge.database
                     .from('website_content')
                     .select('*')
                     .in('section', ['about', 'insights']);
@@ -91,42 +88,40 @@ export default function ContentManagementPage() {
                 }
 
                 // Fetch Team
-                const { data: teamData } = await supabase
+                const { data: teamData } = await insforge.database
                     .from('team_members')
                     .select('*')
-                    .order('order_index');
+                    .order('order_index', { ascending: true });
                 if (teamData) setTeamMembers(teamData);
 
                 // Fetch Blogs
-                const { data: blogData } = await supabase
+                const { data: blogData } = await insforge.database
                     .from('blogs')
                     .select('*')
                     .order('created_at', { ascending: false });
                 if (blogData) setBlogs(blogData);
 
                 // Fetch Careers
-                const { data: careerData } = await supabase
+                const { data: careerData } = await insforge.database
                     .from('job_postings')
                     .select('*')
                     .order('created_at', { ascending: false });
                 if (careerData) setCareers(careerData);
 
                 // Fetch Gallery
-                const { data: galleryData } = await supabase
+                const { data: galleryData } = await insforge.database
                     .from('gallery_items')
                     .select('*')
-                    .order('order_index');
+                    .order('order_index', { ascending: true });
                 if (galleryData) setGallery(galleryData);
 
                 // Fetch Inquiries separately to ensure robustness
-                const { data: inquiryData, error: inquiryError } = await supabase
+                const { data: inquiryData } = await insforge.database
                     .from('contact_inquiries')
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                if (inquiryError) {
-                    console.error("Inquiry fetch error:", inquiryError);
-                } else if (inquiryData) {
+                if (inquiryData) {
                     setInquiries(inquiryData);
                 }
 
@@ -142,12 +137,12 @@ export default function ContentManagementPage() {
         setIsSaving(true);
         try {
             if (activeTab === 'hero') {
-                await supabase.from('website_content').upsert({
+                await insforge.database.from('website_content').upsert({
                     section: 'hero',
                     content: { sliders: heroSliders }
                 }, { onConflict: 'section' });
             } else if (activeTab === 'homepage') {
-                await supabase.from('website_content').upsert([
+                await insforge.database.from('website_content').upsert([
                     { section: 'about', content: homepageContent.about },
                     { section: 'insights', content: homepageContent.insights }
                 ], { onConflict: 'section' });
@@ -163,16 +158,16 @@ export default function ContentManagementPage() {
                     order_index: i
                 }));
                 if (membersToInsert.length > 0) {
-                    await supabase.from('team_members').upsert(membersToInsert);
+                    await insforge.database.from('team_members').upsert(membersToInsert);
                 }
             } else if (activeTab === 'blogs') {
                 for (const blog of blogs) {
                     const slug = blog.slug || blog.title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
-                    await supabase.from('blogs').upsert({ ...blog, slug });
+                    await insforge.database.from('blogs').upsert({ ...blog, slug });
                 }
             } else if (activeTab === 'career') {
                 if (careers.length > 0) {
-                    await supabase.from('job_postings').upsert(careers);
+                    await insforge.database.from('job_postings').upsert(careers);
                 }
             } else if (activeTab === 'gallery') {
                 const galleryToSave = gallery.map((item, i) => {
@@ -187,7 +182,7 @@ export default function ContentManagementPage() {
                 });
 
                 if (galleryToSave.length > 0) {
-                    const { error } = await supabase.from('gallery_items').upsert(galleryToSave);
+                    const { error } = await insforge.database.from('gallery_items').upsert(galleryToSave);
                     if (error) throw error;
                 }
             }
@@ -204,7 +199,7 @@ export default function ContentManagementPage() {
         setIsSaving(true);
         try {
             const fileName = `public/${Date.now()}-${file.name}`;
-            const { data, error } = await supabase.storage.from('assets').uploadAuto(file, fileName);
+            const { data, error } = await insforge.storage.from('assets').upload(fileName, file);
             if (error) throw error;
             if (data?.url) callback(data.url);
         } catch (err: any) {
@@ -217,7 +212,7 @@ export default function ContentManagementPage() {
     const handleDelete = async (table: string, id: string, setter: any, state: any[]) => {
         if (!confirm('Are you sure you want to destroy this record permanently?')) return;
         if (id) {
-            await supabase.from(table).delete().eq('id', id);
+            await insforge.database.from(table).delete().eq('id', id);
         }
         setter(state.filter(item => (item.id || item) !== (id || item)));
     };

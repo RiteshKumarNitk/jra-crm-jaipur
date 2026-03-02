@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Clock, Scale } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 const DEFAULT_FIRM = {
     address: 'Jagdish Enclave, 105, Keshav Nagar, Civil Lines, Jaipur, Rajasthan',
@@ -18,16 +18,13 @@ const DEFAULT_FIRM = {
 export default function ContactPage() {
     const [firm, setFirm] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-    // The supabase client is created once when the component mounts.
-    // It is not included in the useEffect dependency array to prevent re-runs.
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
                 // Fetch firm settings
-                const { data: firmData } = await supabase
+                const { data: firmData } = await insforge.database
                     .from('website_content')
                     .select('content')
                     .eq('section', 'firm_settings')
@@ -46,7 +43,7 @@ export default function ContactPage() {
             }
         };
         fetchData();
-    }, []); // Removed supabase from dependencies to prevent infinite loop
+    }, []);
 
     if (isLoading) return (
         <div className="min-h-screen bg-white flex items-center justify-center">
@@ -163,7 +160,7 @@ export default function ContactPage() {
                             const message = formData.get('message') as string;
 
                             try {
-                                const { error } = await supabase.from('contact_inquiries').insert({
+                                const { error } = await insforge.database.from('contact_inquiries').insert({
                                     name,
                                     email,
                                     phone,

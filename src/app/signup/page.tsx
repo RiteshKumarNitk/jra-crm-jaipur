@@ -1,42 +1,51 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Scale, Loader2, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { insforge } from '@/utils/insforge';
+
 export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
-    const [role, setRole] = useState('Partner'); // Added role state
-    const [otp, setOtp] = useState(''); // Added OTP state
+    const [role, setRole] = useState('Partner');
+    const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
-    const [verifying, setVerifying] = useState(false); // Added verifying state
+    const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [signupSuccess, setSignupSuccess] = useState(false);
     const router = useRouter();
-    const supabase = createClient();
 
     const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault();
         setVerifying(true);
         setError(null);
 
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-            email,
-            token: otp,
-            type: 'signup',
-        });
+        try {
+            const { data, error: verifyError } = await insforge.auth.verifyEmail({
+                email,
+                otp: otp,
+            });
 
-        if (verifyError) {
-            setError(verifyError.message);
+            if (verifyError) {
+                setError(verifyError.message);
+                return;
+            }
+
+            if (data?.accessToken) {
+                localStorage.setItem("access_token", data.accessToken);
+                // Note: refresh_token might not be available in verifyEmail response unless using certain versions
+                router.push('/dashboard');
+                router.refresh();
+            }
+        } catch (err: any) {
+            setError(err.message || "Verification failed");
+        } finally {
             setVerifying(false);
-        } else {
-            router.push('/dashboard');
-            router.refresh();
         }
     };
 
@@ -45,29 +54,30 @@ export default function SignupPage() {
         setLoading(true);
         setError(null);
 
-        const { data, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    role: role,
-                },
-            },
-        });
+        try {
+            const { data, error: signUpError } = await insforge.auth.signUp({
+                email,
+                password,
+                name: fullName,
+                // Add role to metadata if supported, but SDK docs show 'name' as a specific param
+            });
 
-        if (signUpError) {
-            setError(signUpError.message);
-            setLoading(false);
-        } else {
-            // Check if we have a session. If not, email verification is likely required.
-            if (!data?.session) {
+            if (signUpError) {
+                setError(signUpError.message);
+                return;
+            }
+
+            if (data?.requireEmailVerification) {
                 setSignupSuccess(true);
-                setLoading(false);
-            } else {
+            } else if (data?.accessToken) {
+                localStorage.setItem("access_token", data.accessToken);
                 router.push('/dashboard');
                 router.refresh();
             }
+        } catch (err: any) {
+            setError(err.message || "Signup failed");
+        } finally {
+            setLoading(false);
         }
     };
 

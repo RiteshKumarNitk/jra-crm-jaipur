@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 const DEFAULT_ABOUT = {
     title: "We Are The Most Popular Firm With Various Services!",
@@ -19,12 +19,11 @@ const DEFAULT_ABOUT = {
 const AboutSection = () => {
     const [content, setContent] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchContent = async () => {
             try {
-                const { data } = await supabase
+                const { data } = await insforge.database
                     .from('website_content')
                     .select('content')
                     .eq('section', 'about')
@@ -42,7 +41,7 @@ const AboutSection = () => {
             }
         };
         fetchContent();
-    }, []); // Removed supabase from dependencies to prevent infinite loop
+    }, []);
 
     if (isLoading) return null;
 

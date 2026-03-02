@@ -19,8 +19,8 @@ import {
     Gavel,
     Trash2
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 import { format } from 'date-fns';
 
 interface Task {
@@ -36,8 +36,7 @@ interface Task {
 }
 
 export default function TasksPage() {
-    const { user } = useSupabaseUser();
-    const supabase = createClient();
+    const { user } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -58,7 +57,7 @@ export default function TasksPage() {
         if (!user) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data } = await insforge.database
                 .from('tasks')
                 .select('*, cases:cases(title)')
                 .eq('lawyer_id', user.id)
@@ -66,7 +65,7 @@ export default function TasksPage() {
 
             if (data) setTasks(data);
 
-            const { data: casesData } = await supabase.from('cases').select('id, title');
+            const { data: casesData } = await insforge.database.from('cases').select('id, title');
             if (casesData) setCases(casesData);
 
         } catch (err) {
@@ -77,14 +76,16 @@ export default function TasksPage() {
     };
 
     useEffect(() => {
-        fetchData();
+        if (user) {
+            fetchData();
+        }
     }, [user]);
 
     const handleAddTask = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
 
-        const { error } = await supabase
+        const { error } = await insforge.database
             .from('tasks')
             .insert([{
                 ...newTask,
@@ -101,7 +102,7 @@ export default function TasksPage() {
 
     const toggleStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-        const { error } = await supabase
+        const { error } = await insforge.database
             .from('tasks')
             .update({ status: newStatus })
             .eq('id', id);
@@ -110,7 +111,7 @@ export default function TasksPage() {
     };
 
     const deleteTask = async (id: string) => {
-        const { error } = await supabase.from('tasks').delete().eq('id', id);
+        const { error } = await insforge.database.from('tasks').delete().eq('id', id);
         if (!error) fetchData();
     };
 
@@ -199,8 +200,8 @@ export default function TasksPage() {
                                             <div className="flex items-center gap-3 mb-1">
                                                 <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#c9b38c] transition-colors truncate">{task.title}</h4>
                                                 <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest border ${task.priority === 'high' ? 'bg-rose-50 text-rose-500 border-rose-100' :
-                                                        task.priority === 'medium' ? 'bg-[#c9b38c]/10 text-[#c9b38c] border-[#c9b38c]/20' :
-                                                            'bg-slate-50 text-slate-400 border-slate-100'
+                                                    task.priority === 'medium' ? 'bg-[#c9b38c]/10 text-[#c9b38c] border-[#c9b38c]/20' :
+                                                        'bg-slate-50 text-slate-400 border-slate-100'
                                                     }`}>
                                                     {task.priority}
                                                 </span>

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Building2, Globe, Tag, MoreVertical, ExternalLink, Mail, Phone, Scale } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CompaniesPage() {
-    const { user } = useSupabaseUser();
+    const { user } = useAuth();
     const [companies, setCompanies] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,21 +17,20 @@ export default function CompaniesPage() {
         website: '',
         industry: '',
     });
-    const supabase = createClient();
 
     useEffect(() => {
         if (user) fetchCompanies();
     }, [user]);
 
     const fetchCompanies = async () => {
+        if (!user) return;
         try {
             setIsLoading(true);
-            const { data, error } = await supabase
+            const { data } = await insforge.database
                 .from('companies')
                 .select('*, contacts(id)')
-                .eq('lawyer_id', user?.id)
-                .order('name');
-            if (error) throw error;
+                .eq('lawyer_id', user.id)
+                .order('name', { ascending: true });
             setCompanies(data || []);
         } catch (err) {
             console.error('Error fetching companies:', err);
@@ -44,7 +43,7 @@ export default function CompaniesPage() {
         e.preventDefault();
         if (!user) return;
         try {
-            const { error } = await supabase
+            const { error } = await insforge.database
                 .from('companies')
                 .insert([{ ...newCompany, lawyer_id: user.id }]);
             if (error) throw error;

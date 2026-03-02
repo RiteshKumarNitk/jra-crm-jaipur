@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, Tag, Share2, Printer, MapPin } from 'lucide-react';
 import Link from 'next/link';
@@ -14,23 +14,28 @@ export default function BlogDetailPage() {
     const { slug } = useParams();
     const [blog, setBlog] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
     const router = useRouter();
 
     useEffect(() => {
         const fetchBlog = async () => {
-            const { data, error } = await supabase
-                .from('blogs')
-                .select('*')
-                .eq('slug', slug)
-                .maybeSingle();
+            try {
+                const { data, error } = await insforge.database
+                    .from('blogs')
+                    .select('*')
+                    .eq('slug', slug)
+                    .maybeSingle();
 
-            if (data) setBlog(data);
-            else if (!error) router.push('/blogs');
-            setLoading(false);
+                if (data) setBlog(data);
+                else if (!error) router.push('/blogs');
+            } catch (err) {
+                console.error("Blog fetch error:", err);
+                router.push('/blogs');
+            } finally {
+                setLoading(false);
+            }
         };
         fetchBlog();
-    }, [slug]);
+    }, [slug, router]);
 
     if (loading) return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center animate-pulse">

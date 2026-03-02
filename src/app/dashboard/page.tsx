@@ -16,42 +16,50 @@ import {
     Loader2,
     Layers
 } from 'lucide-react';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
+import { isLoggedIn } from '@/utils/auth';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function DashboardPage() {
-    const { user } = useSupabaseUser();
+    const { user, loading: authLoading } = useAuth();
     const [stats, setStats] = useState<any[]>([]);
     const [recentInquiries, setRecentInquiries] = useState<any[]>([]);
     const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
+    const router = useRouter();
 
-    const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Counsel';
+    useEffect(() => {
+        if (!authLoading && !isLoggedIn()) {
+            router.push('/login');
+        }
+    }, [authLoading, router]);
+
+    const fullName = user?.profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Counsel';
+    const userName = fullName.split(' ')[0];
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+            if (!isLoggedIn()) return;
             setIsLoading(true);
             try {
-                // Count Active Careers
-                const { count: careerCount } = await supabase
+                // Fetch stats and recent data using insforge
+                // Note: The .from() syntax in insforge/sdk usually expects a resource name
+                const { count: careerCount } = await insforge
                     .from('job_postings')
                     .select('*', { count: 'exact', head: true })
                     .eq('is_active', true);
 
-                // Count Inquiries
-                const { count: inquiryCount } = await supabase
+                const { count: inquiryCount } = await insforge
                     .from('contact_inquiries')
                     .select('*', { count: 'exact', head: true });
 
-                // Count Blogs
-                const { count: blogCount } = await supabase
+                const { count: blogCount } = await insforge
                     .from('blogs')
                     .select('*', { count: 'exact', head: true });
 
-                // Count Gallery
-                const { count: galleryCount } = await supabase
+                const { count: galleryCount } = await insforge
                     .from('gallery_items')
                     .select('*', { count: 'exact', head: true });
 
@@ -62,16 +70,14 @@ export default function DashboardPage() {
                     { label: 'Firm Assets', value: galleryCount || 0, icon: Layers, color: 'text-emerald-500', bg: 'bg-emerald-50', trend: 'Gallery' },
                 ]);
 
-                // Fetch Recent Inquiries
-                const { data: inquiries } = await supabase
+                const { data: inquiries } = await insforge
                     .from('contact_inquiries')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(5);
                 if (inquiries) setRecentInquiries(inquiries);
 
-                // Fetch Upcoming Appointments
-                const { data: appointments } = await supabase
+                const { data: appointments } = await insforge
                     .from('appointments')
                     .select('*')
                     .gte('start_time', new Date().toISOString())
@@ -84,10 +90,13 @@ export default function DashboardPage() {
             }
             setIsLoading(false);
         };
-        fetchDashboardData();
-    }, []);
 
-    if (isLoading) {
+        if (!authLoading && isLoggedIn()) {
+            fetchDashboardData();
+        }
+    }, [authLoading]);
+
+    if (authLoading || isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-40">
                 <Loader2 className="h-10 w-10 text-[#c9b38c] animate-spin mb-4" />

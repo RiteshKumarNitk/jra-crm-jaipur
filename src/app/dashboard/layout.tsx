@@ -16,11 +16,11 @@ import {
     Gavel,
     FileText
 } from 'lucide-react';
-import { useState } from 'react';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { logout } from '@/utils/auth';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -35,16 +35,21 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const { user, loading } = useSupabaseUser();
-    const supabase = createClient();
+    const { user, loading } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
 
-    if (loading) return null; // Wait for auth to resolve before showing UI
-    if (!user) return null;   // Extra safety: middleware handles the main redirect
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
+
+    if (loading || !user) return null;
 
     // Extract Identity
-    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
-    const userRole = user.user_metadata?.role || 'Member';
+    const userName = user.profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
+    const userRole = user.role || user.user_metadata?.role || 'Member';
     const userInitial = userName[0]?.toUpperCase() || 'J';
 
     const navigation = [
@@ -60,7 +65,7 @@ export default function DashboardLayout({
     ].filter(item => !item.roles || item.roles.includes(userRole));
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut();
+        logout();
         window.location.href = '/';
     };
 

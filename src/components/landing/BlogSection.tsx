@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Lightbulb, ArrowRight } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 const DEFAULT_INSIGHTS = {
     title: "Check Our Latest Tips & News",
@@ -15,13 +15,12 @@ const BlogSection = () => {
     const [header, setHeader] = useState<any>(null);
     const [blogs, setBlogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Fetch Header
-                const { data: headerData } = await supabase
+                const { data: headerData } = await insforge.database
                     .from('website_content')
                     .select('content')
                     .eq('section', 'insights')
@@ -34,7 +33,7 @@ const BlogSection = () => {
                 }
 
                 // Fetch Latest 2 Blogs
-                const { data: blogData } = await supabase
+                const { data: blogData } = await insforge.database
                     .from('blogs')
                     .select('*')
                     .order('created_at', { ascending: false })
@@ -66,7 +65,7 @@ const BlogSection = () => {
             }
         };
         fetchData();
-    }, []); // Removed supabase from dependencies to prevent infinite loop
+    }, []);
 
     if (isLoading) return null;
 

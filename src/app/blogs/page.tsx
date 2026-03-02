@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Clock, Tag, Search, Filter } from 'lucide-react';
 import Image from 'next/image';
@@ -17,21 +17,24 @@ export default function BlogsPage() {
     const [activeCategory, setActiveCategory] = useState('All');
     const [categories, setCategories] = useState<string[]>(['All']);
 
-    const supabase = createClient();
-
     useEffect(() => {
         const fetchBlogs = async () => {
-            const { data } = await supabase
-                .from('blogs')
-                .select('*')
-                .order('created_at', { ascending: false });
-            if (data) {
-                setBlogs(data);
-                setFilteredBlogs(data);
-                const uniqueCategories = Array.from(new Set(data.map((b: any) => b.category || 'Opinion'))) as string[];
-                setCategories(['All', ...uniqueCategories]);
+            try {
+                const { data } = await insforge.database
+                    .from('blogs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (data) {
+                    setBlogs(data);
+                    setFilteredBlogs(data);
+                    const uniqueCategories = Array.from(new Set(data.map((b: any) => b.category || 'Opinion'))) as string[];
+                    setCategories(['All', ...uniqueCategories]);
+                }
+            } catch (err) {
+                console.error("Blogs fetch error:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchBlogs();
     }, []);

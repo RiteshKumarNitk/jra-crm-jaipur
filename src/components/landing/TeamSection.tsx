@@ -4,21 +4,25 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Users, Mail, Linkedin, Scale } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 export default function TeamSection() {
     const [team, setTeam] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchTeam = async () => {
-            const { data } = await supabase
-                .from('team_members')
-                .select('*')
-                .order('order_index');
-            if (data && data.length > 0) setTeam(data);
-            setLoading(false);
+            try {
+                const { data } = await insforge.database
+                    .from('team_members')
+                    .select('*')
+                    .order('order_index', { ascending: true });
+                if (data && data.length > 0) setTeam(data);
+            } catch (err) {
+                console.error("Team fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchTeam();
     }, []);

@@ -6,22 +6,26 @@ import { motion } from 'framer-motion';
 import { Briefcase, MapPin, Clock, ArrowRight, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 export default function CareerPage() {
     const [jobs, setJobs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchJobs = async () => {
-            const { data } = await supabase
-                .from('job_postings')
-                .select('*')
-                .eq('is_active', true)
-                .order('created_at', { ascending: false });
-            if (data) setJobs(data);
-            setLoading(false);
+            try {
+                const { data } = await insforge.database
+                    .from('job_postings')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
+                if (data) setJobs(data);
+            } catch (err) {
+                console.error("Jobs fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchJobs();
     }, []);

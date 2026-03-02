@@ -21,12 +21,11 @@ import {
     Scale,
     Clock
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 
 export default function SettingsPage() {
-    const { user } = useSupabaseUser();
-    const supabase = createClient();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('profile');
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -65,13 +64,13 @@ export default function SettingsPage() {
         if (user) {
             setProfile(prev => ({
                 ...prev,
-                full_name: user.user_metadata?.full_name || '',
+                full_name: user.profile?.name || user.user_metadata?.full_name || '',
                 email: user.email || ''
             }));
         }
 
         const fetchFirmSettings = async () => {
-            const { data } = await supabase
+            const { data } = await insforge.database
                 .from('website_content')
                 .select('content')
                 .eq('section', 'firm_settings')
@@ -82,36 +81,46 @@ export default function SettingsPage() {
             }
         };
         fetchFirmSettings();
-    }, [user, supabase]);
+    }, [user]);
 
     const handleSaveProfile = async () => {
         setIsSaving(true);
-        const { error } = await supabase.auth.updateUser({
-            data: { full_name: profile.full_name }
-        });
+        try {
+            const { error } = await insforge.auth.setProfile({
+                name: profile.full_name
+            });
 
-        if (!error) {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
+            if (!error) {
+                setShowSuccess(true);
+                setTimeout(() => setShowSuccess(false), 3000);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsSaving(false);
         }
-        setIsSaving(false);
     };
 
     const handleSaveFirm = async () => {
         setIsSaving(true);
-        const { error } = await supabase
-            .from('website_content')
-            .upsert({
-                section: 'firm_settings',
-                content: firm,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'section' });
+        try {
+            const { error } = await insforge.database
+                .from('website_content')
+                .upsert({
+                    section: 'firm_settings',
+                    content: firm,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'section' });
 
-        if (!error) {
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
+            if (!error) {
+                setShowSuccess(true);
+                setTimeout(() => setShowSuccess(false), 3000);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsSaving(false);
         }
-        setIsSaving(false);
     };
 
     return (

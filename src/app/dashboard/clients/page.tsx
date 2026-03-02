@@ -13,18 +13,17 @@ import {
     Filter,
     ArrowRight
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ContactsPage() {
-    const { user } = useSupabaseUser();
+    const { user } = useAuth();
     const [contacts, setContacts] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const supabase = createClient();
 
     const [newContact, setNewContact] = useState({
         full_name: '',
@@ -45,27 +44,33 @@ export default function ContactsPage() {
     }, [user]);
 
     const fetchContacts = async () => {
+        if (!user) return;
         try {
             setIsLoading(true);
-            const { data, error } = await supabase
+            const { data } = await insforge.database
                 .from('contacts')
                 .select('*, companies(name)')
-                .eq('lawyer_id', user?.id);
-            if (error) throw error;
+                .eq('lawyer_id', user.id);
             setContacts(data || []);
         } catch (err) { console.error(err); } finally { setIsLoading(false); }
     };
 
     const fetchCompanies = async () => {
-        const { data } = await supabase.from('companies').select('id, name').eq('lawyer_id', user?.id);
-        setCompanies(data || []);
+        if (!user) return;
+        try {
+            const { data } = await insforge.database
+                .from('companies')
+                .select('id, name')
+                .eq('lawyer_id', user.id);
+            setCompanies(data || []);
+        } catch (err) { console.error(err); }
     };
 
     const handleAddContact = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
         try {
-            const { error } = await supabase
+            const { error } = await insforge.database
                 .from('contacts')
                 .insert([{ ...newContact, lawyer_id: user.id }]);
             if (error) throw error;

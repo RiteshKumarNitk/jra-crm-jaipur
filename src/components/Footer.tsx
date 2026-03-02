@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Facebook, Twitter, Linkedin, Instagram, Send, ArrowUp } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 const DEFAULT_FIRM = {
     address: 'Jagdish Enclave, 105, Keshav Nagar, Civil Lines, Jaipur, Rajasthan',
@@ -14,11 +14,10 @@ const DEFAULT_FIRM = {
 
 export default function Footer() {
     const [firm, setFirm] = useState(DEFAULT_FIRM);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchFirm = async () => {
-            const { data } = await supabase
+            const { data } = await insforge.database
                 .from('website_content')
                 .select('content')
                 .eq('section', 'firm_settings')
@@ -29,7 +28,7 @@ export default function Footer() {
             }
         };
         fetchFirm();
-    }, [supabase]);
+    }, []);
 
     const scrollUp = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });

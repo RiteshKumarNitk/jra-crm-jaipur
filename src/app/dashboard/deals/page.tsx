@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, MoreHorizontal, ArrowRight, DollarSign, Clock, Tag, Gavel, Briefcase } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const STAGES = [
@@ -15,23 +16,26 @@ const STAGES = [
 ];
 
 export default function DealsPage() {
+    const { user } = useAuth();
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const supabase = createClient();
 
     useEffect(() => {
-        fetchDeals();
-    }, []);
+        if (user) {
+            fetchDeals();
+        }
+    }, [user]);
 
     const fetchDeals = async () => {
+        if (!user) return;
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            const { data } = await insforge.database
                 .from('deals')
-                .select('*, contacts(full_name), companies(name)');
-            if (error) throw error;
+                .select('*, contacts(full_name), companies(name)')
+                .eq('lawyer_id', user.id);
             setDeals(data || []);
         } catch (err) {
             console.error('Error fetching deals:', err);
@@ -42,7 +46,7 @@ export default function DealsPage() {
 
     const updateStage = async (dealId: string, newStage: string) => {
         try {
-            const { error } = await supabase
+            const { error } = await insforge.database
                 .from('deals')
                 .update({ stage: newStage })
                 .eq('id', dealId);

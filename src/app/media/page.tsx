@@ -6,22 +6,20 @@ import { motion } from 'framer-motion';
 import { Play, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 export default function MediaPage() {
     const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchMedia = async () => {
             setLoading(true);
             try {
-                const { data, error } = await supabase
+                const { data } = await insforge.database
                     .from('gallery_items')
                     .select('*')
-                    .order('order_index');
-                if (error) throw error;
+                    .order('order_index', { ascending: true });
                 if (data) setMediaItems(data);
             } catch (err) {
                 console.error("Error fetching media:", err);
@@ -30,7 +28,7 @@ export default function MediaPage() {
             }
         };
         fetchMedia();
-    }, []); // Removed supabase from dependencies to prevent infinite loop
+    }, []);
 
     const getIcon = (type: string) => {
         if (type?.toLowerCase().includes('video')) return Play;

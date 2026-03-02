@@ -17,18 +17,17 @@ import {
     Building2,
     Users
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
 export default function DealDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const { user } = useSupabaseUser();
+    const { user } = useAuth();
     const [deal, setDeal] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'notes' | 'files'>('timeline');
-    const supabase = createClient();
 
     // Feature states
     const [notes, setNotes] = useState<any[]>([]);
@@ -48,11 +47,11 @@ export default function DealDetailsPage({ params }: { params: Promise<{ id: stri
         try {
             setLoading(true);
             const [dealRes, notesRes, tasksRes, logsRes, attachRes] = await Promise.all([
-                supabase.from('deals').select('*, contacts(*), companies(*)').eq('id', id).single(),
-                supabase.from('deal_notes').select('*').eq('deal_id', id).order('created_at', { ascending: false }),
-                supabase.from('deal_tasks').select('*').eq('deal_id', id).order('created_at', { ascending: true }),
-                supabase.from('activity_logs').select('*').eq('deal_id', id).order('created_at', { ascending: false }),
-                supabase.from('deal_attachments').select('*').eq('deal_id', id)
+                insforge.database.from('deals').select('*, contacts(*), companies(*)').eq('id', id).maybeSingle(),
+                insforge.database.from('deal_notes').select('*').eq('deal_id', id).order('created_at', { ascending: false }),
+                insforge.database.from('deal_tasks').select('*').eq('deal_id', id).order('created_at', { ascending: true }),
+                insforge.database.from('activity_logs').select('*').eq('deal_id', id).order('created_at', { ascending: false }),
+                insforge.database.from('deal_attachments').select('*').eq('deal_id', id)
             ]);
 
             setDeal(dealRes.data);
@@ -70,11 +69,11 @@ export default function DealDetailsPage({ params }: { params: Promise<{ id: stri
     const addNote = async () => {
         if (!newNote.trim()) return;
         try {
-            const { data, error } = await supabase
+            const { data, error } = await insforge.database
                 .from('deal_notes')
                 .insert([{ deal_id: id, content: newNote, lawyer_id: user?.id }])
                 .select();
-            if (!error) {
+            if (!error && data) {
                 setNotes([data[0], ...notes]);
                 setNewNote('');
                 fetchDealData();
@@ -85,7 +84,7 @@ export default function DealDetailsPage({ params }: { params: Promise<{ id: stri
     const toggleTask = async (taskId: string, currentStatus: string) => {
         const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
         try {
-            await supabase.from('deal_tasks').update({ status: newStatus }).eq('id', taskId);
+            await insforge.database.from('deal_tasks').update({ status: newStatus }).eq('id', taskId);
             setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
         } catch (err) { console.error(err); }
     };

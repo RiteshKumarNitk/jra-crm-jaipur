@@ -16,8 +16,8 @@ import {
     Gavel,
     Shield
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 
 interface Case {
     id: string;
@@ -37,13 +37,12 @@ interface Client {
 }
 
 export default function CasesPage() {
-    const { user } = useSupabaseUser();
+    const { user } = useAuth();
     const [cases, setCases] = useState<Case[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const supabase = createClient();
 
     // Form state
     const [newCase, setNewCase] = useState({
@@ -60,19 +59,19 @@ export default function CasesPage() {
 
         try {
             // Fetch cases with client names
-            const { data: casesData, error: casesError } = await supabase
+            const { data: casesData } = await insforge.database
                 .from('cases')
                 .select('*, clients:contacts(full_name)')
                 .eq('lawyer_id', user.id)
                 .order('created_at', { ascending: false });
 
             // Fetch clients for the dropdown
-            const { data: clientsData } = await supabase
+            const { data: clientsData } = await insforge.database
                 .from('contacts')
                 .select('id, full_name')
                 .eq('lawyer_id', user.id);
 
-            if (!casesError && casesData) {
+            if (casesData) {
                 setCases(casesData as any[]);
             }
             if (clientsData) {
@@ -86,27 +85,32 @@ export default function CasesPage() {
     };
 
     useEffect(() => {
-        fetchData();
+        if (user) {
+            fetchData();
+        }
     }, [user]);
 
     const handleAddCase = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
 
-        const { error } = await supabase
-            .from('cases')
-            .insert([
-                {
-                    ...newCase,
-                    lawyer_id: user.id,
-                },
-            ])
-            .select();
+        try {
+            const { error } = await insforge.database
+                .from('cases')
+                .insert([
+                    {
+                        ...newCase,
+                        lawyer_id: user.id,
+                    },
+                ]);
 
-        if (!error) {
-            setIsAddModalOpen(false);
-            setNewCase({ title: '', description: '', case_number: '', practice_area: 'Corporate Law', client_id: '' });
-            fetchData();
+            if (!error) {
+                setIsAddModalOpen(false);
+                setNewCase({ title: '', description: '', case_number: '', practice_area: 'Corporate Law', client_id: '' });
+                fetchData();
+            }
+        } catch (err) {
+            console.error("Add case error:", err);
         }
     };
 

@@ -7,7 +7,7 @@ import { Scale, Gavel, Shield, FileText, Briefcase, Globe, ChevronLeft, ChevronR
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 const DEFAULT_ABOUT = {
     hero: {
@@ -32,12 +32,11 @@ export default function AboutPage() {
     const [content, setContent] = useState(DEFAULT_ABOUT);
     const [team, setTeam] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchData = async () => {
             // Fetch About Page Content
-            const { data: pageData } = await supabase
+            const { data: pageData } = await insforge.database
                 .from('website_content')
                 .select('content')
                 .eq('section', 'about_page')
@@ -46,7 +45,7 @@ export default function AboutPage() {
             if (pageData?.content) setContent(pageData.content);
 
             // Fetch Top 3 Team Members
-            const { data: teamData } = await supabase
+            const { data: teamData } = await insforge.database
                 .from('team_members')
                 .select('*')
                 .order('order_index')
@@ -57,7 +56,7 @@ export default function AboutPage() {
             setLoading(false);
         };
         fetchData();
-    }, [supabase]);
+    }, []);
 
     return (
         <main className="min-h-screen bg-white font-sans overflow-x-hidden">

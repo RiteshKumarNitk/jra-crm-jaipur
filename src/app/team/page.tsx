@@ -6,34 +6,38 @@ import { motion } from 'framer-motion';
 import { Facebook, Twitter, Linkedin, Mail, Users, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { createClient } from '@/utils/supabase/client';
+import { insforge } from '@/utils/insforge';
 
 export default function TeamPage() {
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
         const fetchTeam = async () => {
-            const { data } = await supabase
-                .from('team_members')
-                .select('*')
-                .order('order_index');
+            try {
+                const { data } = await insforge.database
+                    .from('team_members')
+                    .select('*')
+                    .order('order_index', { ascending: true });
 
-            if (data && data.length > 0) {
-                setTeamMembers(data);
-            } else {
-                // Fallback team if none in DB
-                setTeamMembers([
-                    { name: 'CA Mitesh Rathore', role: 'Managing Director', image_url: 'https://images.unsplash.com/photo-1556155092-490a1ba16284' },
-                    { name: 'Onoon Lucy', role: 'Family Lawyer', image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' },
-                    { name: 'John Doe', role: 'Corporate Consultant', image_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
-                ]);
+                if (data && data.length > 0) {
+                    setTeamMembers(data);
+                } else {
+                    // Fallback team if none in DB
+                    setTeamMembers([
+                        { name: 'CA Mitesh Rathore', role: 'Managing Director', image_url: 'https://images.unsplash.com/photo-1556155092-490a1ba16284' },
+                        { name: 'Onoon Lucy', role: 'Family Lawyer', image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' },
+                        { name: 'John Doe', role: 'Corporate Consultant', image_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
+                    ]);
+                }
+            } catch (err) {
+                console.error("Team fetch error:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchTeam();
-    }, [supabase]);
+    }, []);
 
     return (
         <main className="min-h-screen bg-white font-sans overflow-x-hidden">

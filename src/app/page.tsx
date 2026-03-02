@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Hero from '@/components/landing/Hero';
@@ -11,16 +11,7 @@ import BlogSection from '@/components/landing/BlogSection';
 import TeamSection from '@/components/landing/TeamSection';
 
 export default function LandingPage() {
-  const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, [supabase]);
+  const { user } = useAuth();
 
   return (
     <div className="flex flex-col min-h-screen bg-white selection:bg-[#c9b38c] selection:text-white">

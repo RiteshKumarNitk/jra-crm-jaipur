@@ -18,8 +18,8 @@ import {
     Loader2,
     Gavel
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useAuth } from '@/hooks/useAuth';
+import { insforge } from '@/utils/insforge';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 
 interface Appointment {
@@ -37,8 +37,7 @@ interface Appointment {
 }
 
 export default function AppointmentsPage() {
-    const { user } = useSupabaseUser();
-    const supabase = createClient();
+    const { user } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,7 +61,7 @@ export default function AppointmentsPage() {
         if (!user) return;
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data } = await insforge.database
                 .from('appointments')
                 .select('*, clients:clients(full_name), cases:cases(title)')
                 .eq('lawyer_id', user.id)
@@ -70,8 +69,8 @@ export default function AppointmentsPage() {
 
             if (data) setAppointments(data);
 
-            const { data: clientsData } = await supabase.from('clients').select('id, full_name');
-            const { data: casesData } = await supabase.from('cases').select('id, title');
+            const { data: clientsData } = await insforge.database.from('clients').select('id, full_name');
+            const { data: casesData } = await insforge.database.from('cases').select('id, title');
 
             if (clientsData) setClients(clientsData);
             if (casesData) setCases(casesData);
@@ -84,25 +83,31 @@ export default function AppointmentsPage() {
     };
 
     useEffect(() => {
-        fetchData();
+        if (user) {
+            fetchData();
+        }
     }, [user]);
 
     const handleAddAppointment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
 
-        const { error } = await supabase
-            .from('appointments')
-            .insert([{
-                ...newAppointment,
-                lawyer_id: user.id,
-                status: 'scheduled'
-            }]);
+        try {
+            const { error } = await insforge.database
+                .from('appointments')
+                .insert([{
+                    ...newAppointment,
+                    lawyer_id: user.id,
+                    status: 'scheduled'
+                }]);
 
-        if (!error) {
-            setIsAddModalOpen(false);
-            setNewAppointment({ title: '', description: '', start_time: '', end_time: '', location: '', client_id: '', case_id: '' });
-            fetchData();
+            if (!error) {
+                setIsAddModalOpen(false);
+                setNewAppointment({ title: '', description: '', start_time: '', end_time: '', location: '', client_id: '', case_id: '' });
+                fetchData();
+            }
+        } catch (err) {
+            console.error("Add appointment error:", err);
         }
     };
 

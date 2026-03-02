@@ -3,26 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
-    const supabase = createClient();
-    const [user, setUser] = useState<any>(null);
+    const { user } = useAuth();
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
-        const getUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
-        };
-        getUser();
-
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [supabase]);
+    }, []);
 
     const navItems = [
         { name: 'Home', href: '/' },

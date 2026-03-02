@@ -49,19 +49,19 @@ export default function DashboardLayout({
 
     // Extract Identity
     const userName = user.profile?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
-    const userRole = user.role || user.user_metadata?.role || 'Member';
+    const userRole = user.profile?.role || user.role || user.user_metadata?.role || 'Member';
     const userInitial = userName[0]?.toUpperCase() || 'J';
 
     const navigation = [
         { name: 'Practice Overview', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Website Management', href: '/dashboard/content', icon: FileText, roles: ['Administrator'] },
+        { name: 'Website Management', href: '/dashboard/content', icon: FileText, roles: ['Administrator', 'Partner'] },
         { name: 'Legal Pipeline', href: '/dashboard/deals', icon: Briefcase },
         { name: 'All Matters', href: '/dashboard/cases', icon: Gavel },
         { name: 'Client Registry', href: '/dashboard/clients', icon: Users },
         { name: 'Firm Directory', href: '/dashboard/companies', icon: Scale },
         { name: 'Docket/Calendar', href: '/dashboard/appointments', icon: Calendar },
         { name: 'Protocol Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-        { name: 'Practice Settings', href: '/dashboard/settings', icon: Settings, roles: ['Administrator'] },
+        { name: 'Practice Settings', href: '/dashboard/settings', icon: Settings, roles: ['Administrator', 'Partner'] },
     ].filter(item => !item.roles || item.roles.includes(userRole));
 
     const handleSignOut = async () => {

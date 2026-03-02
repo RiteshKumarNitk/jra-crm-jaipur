@@ -46,20 +46,20 @@ export default function DashboardPage() {
             try {
                 // Fetch stats and recent data using insforge
                 // Note: The .from() syntax in insforge/sdk usually expects a resource name
-                const { count: careerCount } = await insforge
+                const { count: careerCount } = await insforge.database
                     .from('job_postings')
                     .select('*', { count: 'exact', head: true })
                     .eq('is_active', true);
 
-                const { count: inquiryCount } = await insforge
+                const { count: inquiryCount } = await insforge.database
                     .from('contact_inquiries')
                     .select('*', { count: 'exact', head: true });
 
-                const { count: blogCount } = await insforge
+                const { count: blogCount } = await insforge.database
                     .from('blogs')
                     .select('*', { count: 'exact', head: true });
 
-                const { count: galleryCount } = await insforge
+                const { count: galleryCount } = await insforge.database
                     .from('gallery_items')
                     .select('*', { count: 'exact', head: true });
 
@@ -70,14 +70,14 @@ export default function DashboardPage() {
                     { label: 'Firm Assets', value: galleryCount || 0, icon: Layers, color: 'text-emerald-500', bg: 'bg-emerald-50', trend: 'Gallery' },
                 ]);
 
-                const { data: inquiries } = await insforge
+                const { data: inquiries } = await insforge.database
                     .from('contact_inquiries')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(5);
                 if (inquiries) setRecentInquiries(inquiries);
 
-                const { data: appointments } = await insforge
+                const { data: appointments } = await insforge.database
                     .from('appointments')
                     .select('*')
                     .gte('start_time', new Date().toISOString())

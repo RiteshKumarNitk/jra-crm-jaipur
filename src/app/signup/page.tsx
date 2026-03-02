@@ -38,7 +38,13 @@ export default function SignupPage() {
 
             if (data?.accessToken) {
                 localStorage.setItem("access_token", data.accessToken);
-                // Note: refresh_token might not be available in verifyEmail response unless using certain versions
+
+                // ✅ Save role to profile (VERY IMPORTANT for admin access)
+                await insforge.auth.setProfile({
+                    name: fullName,
+                    role: role
+                });
+
                 router.push('/dashboard');
                 router.refresh();
             }

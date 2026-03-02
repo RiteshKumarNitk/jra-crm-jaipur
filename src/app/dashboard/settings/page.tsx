@@ -7,6 +7,7 @@ import {
     User,
     Shield,
     Bell,
+    Briefcase,
     Save,
     Loader2,
     CheckCircle2,
@@ -14,6 +15,7 @@ import {
     Lock,
     Eye,
     EyeOff,
+    FileText,
     Building2,
     Mail,
     Phone,
@@ -65,6 +67,7 @@ export default function SettingsPage() {
             setProfile(prev => ({
                 ...prev,
                 full_name: user.profile?.name || user.user_metadata?.full_name || '',
+                role: user.role || user.profile?.role || user.user_metadata?.role || 'Partner',
                 email: user.email || ''
             }));
         }
@@ -87,7 +90,8 @@ export default function SettingsPage() {
         setIsSaving(true);
         try {
             const { error } = await insforge.auth.setProfile({
-                name: profile.full_name
+                name: profile.full_name,
+                role: profile.role
             });
 
             if (!error) {

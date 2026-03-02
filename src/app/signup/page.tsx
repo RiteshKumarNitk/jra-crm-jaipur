@@ -11,11 +11,34 @@ export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [role, setRole] = useState('Partner'); // Added role state
+    const [otp, setOtp] = useState(''); // Added OTP state
     const [loading, setLoading] = useState(false);
+    const [verifying, setVerifying] = useState(false); // Added verifying state
     const [error, setError] = useState<string | null>(null);
     const [signupSuccess, setSignupSuccess] = useState(false);
     const router = useRouter();
     const supabase = createClient();
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setVerifying(true);
+        setError(null);
+
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+            email,
+            token: otp,
+            type: 'signup',
+        });
+
+        if (verifyError) {
+            setError(verifyError.message);
+            setVerifying(false);
+        } else {
+            router.push('/dashboard');
+            router.refresh();
+        }
+    };
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,6 +51,7 @@ export default function SignupPage() {
             options: {
                 data: {
                     full_name: fullName,
+                    role: role,
                 },
             },
         });
@@ -69,19 +93,57 @@ export default function SignupPage() {
 
                 <div className="bg-white border border-slate-100 rounded-sm p-10 shadow-2xl shadow-slate-200/50">
                     {signupSuccess ? (
-                        <div className="text-center py-8">
-                            <div className="bg-green-50 text-green-600 p-6 mb-6 font-black uppercase tracking-widest text-[11px] border border-green-100 italic">
-                                Verification Link Sent
+                        <div className="space-y-8">
+                            <div className="text-center">
+                                <div className="bg-green-50 text-green-600 p-6 mb-6 font-black uppercase tracking-widest text-[11px] border border-green-100 italic">
+                                    Verification Code Required
+                                </div>
+                                <p className="text-slate-500 font-light mb-8">
+                                    A secure 6-digit OTP has been dispatched to <span className="font-bold text-slate-800">{email}</span>. Please authorize your access below.
+                                </p>
                             </div>
-                            <p className="text-slate-500 font-light mb-8">
-                                Please check your email inbox to verify your account and activate your practice registry access.
-                            </p>
-                            <Link
-                                href="/login"
-                                className="inline-flex items-center gap-2 text-[#c9b38c] font-black uppercase tracking-widest text-[11px] hover:underline"
-                            >
-                                Back to Sign In <ArrowRight className="h-4 w-4" />
-                            </Link>
+
+                            <form onSubmit={handleVerifyOtp} className="space-y-6">
+                                <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Verification Code</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        className="w-full px-5 py-4 rounded-none bg-slate-50 border-none focus:ring-1 focus:ring-[#c9b38c] transition-all text-slate-900 placeholder-slate-300 shadow-inner text-center text-2xl tracking-[0.5em] font-serif"
+                                        placeholder="000000"
+                                        maxLength={6}
+                                    />
+                                </div>
+
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        className="p-4 rounded-none bg-red-50 border-l-2 border-red-500 text-red-600 text-[10px] font-black uppercase tracking-widest"
+                                    >
+                                        {error}
+                                    </motion.div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={verifying}
+                                    className="w-full py-5 bg-[#c9b38c] hover:bg-[#b99c69] text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-[#c9b38c]/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-[12px]"
+                                >
+                                    {verifying ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Validate & Initialize Registry <ArrowRight className="h-4 w-4" /></>}
+                                </button>
+                            </form>
+
+                            <div className="text-center pt-6 border-t border-slate-50">
+                                <button
+                                    onClick={() => setSignupSuccess(false)}
+                                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#c9b38c] transition-colors"
+                                >
+                                    Incorrect Email? Re-enter Credentials
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <form onSubmit={handleSignup} className="space-y-6">
@@ -95,6 +157,17 @@ export default function SignupPage() {
                                     className="w-full px-5 py-4 rounded-none bg-slate-50 border-none focus:ring-1 focus:ring-[#c9b38c] transition-all text-slate-900 placeholder-slate-300 shadow-inner"
                                     placeholder="Hon. John Doe"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Practice Role</label>
+                                <select
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="w-full px-5 py-4 rounded-none bg-slate-50 border-none focus:ring-1 focus:ring-[#c9b38c] transition-all text-slate-900 shadow-inner appearance-none cursor-pointer"
+                                >
+                                    <option value="Partner">Senior Partner</option>
+                                    <option value="Administrator">Practice Administrator</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Practice Email</label>
@@ -146,7 +219,7 @@ export default function SignupPage() {
                         </p>
                     </div>
                 </div>
-            </motion.div>
-        </div>
+            </motion.div >
+        </div >
     );
 }

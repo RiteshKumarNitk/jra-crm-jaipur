@@ -35,30 +35,34 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const { user } = useSupabaseUser();
+    const { user, loading } = useSupabaseUser();
     const supabase = createClient();
     const pathname = usePathname();
 
+    if (loading) return null; // Wait for auth to resolve before showing UI
+    if (!user) return null;   // Extra safety: middleware handles the main redirect
+
+    // Extract Identity
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
+    const userRole = user.user_metadata?.role || 'Member';
+    const userInitial = userName[0]?.toUpperCase() || 'J';
+
     const navigation = [
         { name: 'Practice Overview', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Website Management', href: '/dashboard/content', icon: FileText },
+        { name: 'Website Management', href: '/dashboard/content', icon: FileText, roles: ['Administrator'] },
         { name: 'Legal Pipeline', href: '/dashboard/deals', icon: Briefcase },
         { name: 'All Matters', href: '/dashboard/cases', icon: Gavel },
         { name: 'Client Registry', href: '/dashboard/clients', icon: Users },
         { name: 'Firm Directory', href: '/dashboard/companies', icon: Scale },
         { name: 'Docket/Calendar', href: '/dashboard/appointments', icon: Calendar },
         { name: 'Protocol Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-        { name: 'Practice Settings', href: '/dashboard/settings', icon: Settings },
-    ];
+        { name: 'Practice Settings', href: '/dashboard/settings', icon: Settings, roles: ['Administrator'] },
+    ].filter(item => !item.roles || item.roles.includes(userRole));
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         window.location.href = '/';
     };
-
-    // ENABLE PREVIEW MODE: Use dummy identity if no session found 
-    const userName = user?.user_metadata?.full_name || 'Senior Partner (Demo)';
-    const userInitial = userName[0].toUpperCase();
 
     return (
         <div className="flex h-screen bg-[#fcfcfc] text-slate-800 overflow-hidden font-sans">
@@ -123,7 +127,7 @@ export default function DashboardLayout({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 truncate">{userName}</p>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Senior Counsel</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{userRole}</p>
                                     </div>
                                 </div>
                                 <button

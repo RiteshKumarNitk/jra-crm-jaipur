@@ -66,6 +66,21 @@ export function createClient() {
             signOut: async () => {
                 return await client.auth.signOut();
             },
+            // Map verifyOtp (Supabase style) to verifyEmail (InsForge style)
+            verifyOtp: async (params: any) => {
+                const { data, error } = await client.auth.verifyEmail({
+                    email: params.email,
+                    otp: params.token || params.otp
+                });
+                return {
+                    data: data ? { ...data, session: data.accessToken ? data : null } : null,
+                    error
+                };
+            },
+            // Direct map for verifyEmail
+            verifyEmail: async (params: any) => {
+                return await client.auth.verifyEmail(params);
+            },
             onAuthStateChange: (callback: any) => {
                 // Dummy subscription to prevent crashes
                 return {

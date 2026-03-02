@@ -20,7 +20,8 @@ import {
     MessageSquare,
     MapPin,
     Building2,
-    ExternalLink
+    ExternalLink,
+    ShieldAlert
 } from 'lucide-react';
 import { insforge } from '@/utils/insforge';
 
@@ -32,6 +33,7 @@ const TABS = [
     { id: 'career', name: 'Careers', icon: Briefcase },
     { id: 'gallery', name: 'Gallery', icon: Layers },
     { id: 'inquiries', name: 'Inquiries', icon: MessageSquare },
+    { id: 'disclaimer', name: 'Security Gate', icon: ShieldAlert },
 ];
 
 export default function ContentManagementPage() {
@@ -50,6 +52,13 @@ export default function ContentManagementPage() {
     const [careers, setCareers] = useState<any[]>([]);
     const [gallery, setGallery] = useState<any[]>([]);
     const [inquiries, setInquiries] = useState<any[]>([]);
+    const [disclaimer, setDisclaimer] = useState<any>({
+        title: "Legal Protocol Notice",
+        mandate: "Official Mandate 2024",
+        message: '"This digital infrastructure is reserved exclusively for the private consultants and verified partners of JRA Legal Associates."',
+        subtext: "Strategic cross-referencing with official RERA publications is mandatory.",
+        acknowledge_text: "Authorize Entry & Agree"
+    });
     const [isLoading, setIsLoading] = useState(true);
 
     // Load Initial Data
@@ -115,14 +124,19 @@ export default function ContentManagementPage() {
                     .order('order_index', { ascending: true });
                 if (galleryData) setGallery(galleryData);
 
-                // Fetch Inquiries separately to ensure robustness
-                const { data: inquiryData } = await insforge.database
-                    .from('contact_inquiries')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
                 if (inquiryData) {
                     setInquiries(inquiryData);
+                }
+
+                // Fetch Disclaimer
+                const { data: disclaimerData } = await insforge.database
+                    .from('website_content')
+                    .select('content')
+                    .eq('section', 'disclaimer')
+                    .maybeSingle();
+
+                if (disclaimerData?.content) {
+                    setDisclaimer(disclaimerData.content);
                 }
 
             } catch (err) {
@@ -185,6 +199,11 @@ export default function ContentManagementPage() {
                     const { error } = await insforge.database.from('gallery_items').upsert(galleryToSave);
                     if (error) throw error;
                 }
+            } else if (activeTab === 'disclaimer') {
+                await insforge.database.from('website_content').upsert({
+                    section: 'disclaimer',
+                    content: disclaimer
+                }, { onConflict: 'section' });
             }
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
@@ -583,6 +602,72 @@ export default function ContentManagementPage() {
                                 </div>
                             ))}
                             {inquiries.length === 0 && <div className="text-center py-20 opacity-30 italic text-sm">No strategic inquiries recorded.</div>}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'disclaimer' && (
+                    <div className="space-y-10 max-w-4xl">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-2xl font-serif text-slate-800 italic font-medium">Security Gate Configuration</h3>
+                        </div>
+
+                        <div className="bg-slate-50 border border-slate-200 p-8 space-y-8 text-slate-900">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block px-1">Protocol Title</label>
+                                    <input
+                                        value={disclaimer.title}
+                                        onChange={(e) => setDisclaimer({ ...disclaimer, title: e.target.value })}
+                                        className="w-full bg-white border border-slate-100 p-4 text-xs font-bold text-slate-900 focus:ring-1 focus:ring-[#c9b38c] outline-none shadow-sm"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block px-1">Mandate Version</label>
+                                    <input
+                                        value={disclaimer.mandate}
+                                        onChange={(e) => setDisclaimer({ ...disclaimer, mandate: e.target.value })}
+                                        className="w-full bg-white border border-slate-100 p-4 text-xs font-bold text-[#c9b38c] focus:ring-1 focus:ring-[#c9b38c] outline-none shadow-sm font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block px-1 text-center">Core Legal Message</label>
+                                <textarea
+                                    rows={4}
+                                    value={disclaimer.message}
+                                    onChange={(e) => setDisclaimer({ ...disclaimer, message: e.target.value })}
+                                    className="w-full bg-white border border-slate-100 p-6 text-base font-serif italic text-center text-slate-700 leading-relaxed focus:ring-1 focus:ring-[#c9b38c] outline-none shadow-sm"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block px-1">Secondary Statutory Note</label>
+                                <input
+                                    value={disclaimer.subtext}
+                                    onChange={(e) => setDisclaimer({ ...disclaimer, subtext: e.target.value })}
+                                    className="w-full bg-white border border-slate-100 p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 focus:ring-1 focus:ring-[#c9b38c] outline-none shadow-sm"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block px-1">Authorization Button Text</label>
+                                <input
+                                    value={disclaimer.acknowledge_text}
+                                    onChange={(e) => setDisclaimer({ ...disclaimer, acknowledge_text: e.target.value })}
+                                    className="w-full bg-[#c9b38c] border-none p-4 text-xs font-black uppercase tracking-[0.2em] text-white focus:ring-2 focus:ring-[#c9b38c] outline-none shadow-lg shadow-[#c9b38c]/20"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 border border-slate-100 bg-white space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                <ShieldAlert size={14} className="text-[#c9b38c]" /> Deployment Safety
+                            </h4>
+                            <p className="text-[11px] text-slate-500 font-light italic leading-relaxed">
+                                Changes to the Security Gate are applied immediately across all edge nodes. This is the first interaction a user has with your firm—ensure the legal nomenclature is precise.
+                            </p>
                         </div>
                     </div>
                 )}

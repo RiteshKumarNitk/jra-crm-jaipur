@@ -12,7 +12,7 @@ export function useSupabaseUser() {
     useEffect(() => {
         const fetchUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            setUser(user);
+            setUser(user ?? null);
             setLoading(false);
         };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Users,
@@ -11,29 +12,89 @@ import {
     Scale,
     CheckSquare,
     Gavel,
-    TrendingUp,
-    ShieldCheck
+    ShieldCheck,
+    Loader2,
+    Layers
 } from 'lucide-react';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
 export default function DashboardPage() {
     const { user } = useSupabaseUser();
+    const [stats, setStats] = useState<any[]>([]);
+    const [recentInquiries, setRecentInquiries] = useState<any[]>([]);
+    const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const supabase = createClient();
+
     const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Counsel';
 
-    const stats = [
-        { label: 'Active Matters', value: '12', icon: Gavel, color: 'text-[#c9b38c]', bg: 'bg-[#c9b38c]/10', trend: '+2 this week' },
-        { label: 'Key Contacts', value: '48', icon: Users, color: 'text-slate-600', bg: 'bg-slate-100', trend: '+12% growth' },
-        { label: 'Projected Value', value: '$84.2k', icon: Scale, color: 'text-slate-600', bg: 'bg-slate-100', trend: '$12k pending' },
-        { label: 'Urgent Tasks', value: '7', icon: CheckSquare, color: 'text-rose-500', bg: 'bg-rose-50', trend: '3 due today' },
-    ];
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setIsLoading(true);
+            try {
+                // Count Active Careers
+                const { count: careerCount } = await supabase
+                    .from('job_postings')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('is_active', true);
 
-    const recentCases = [
-        { id: 1, title: 'Johnson vs. Smith Real Estate', client: 'Alice Johnson', status: 'In Trial', openDate: '2024-01-15' },
-        { id: 2, title: 'Corporate Merger - TechFlow Inc.', client: 'TechFlow Inc.', status: 'Discovery', openDate: '2024-02-02' },
-        { id: 3, title: 'Estate Planning - Miller Family', client: 'Robert Miller', status: 'Drafting', openDate: '2024-02-10' },
-        { id: 4, title: 'Patent Infringement - CyberGrd', client: 'CyberGrd Solutions', status: 'Filing', openDate: '2024-02-12' },
-    ];
+                // Count Inquiries
+                const { count: inquiryCount } = await supabase
+                    .from('contact_inquiries')
+                    .select('*', { count: 'exact', head: true });
+
+                // Count Blogs
+                const { count: blogCount } = await supabase
+                    .from('blogs')
+                    .select('*', { count: 'exact', head: true });
+
+                // Count Gallery
+                const { count: galleryCount } = await supabase
+                    .from('gallery_items')
+                    .select('*', { count: 'exact', head: true });
+
+                setStats([
+                    { label: 'Active Opportunities', value: careerCount || 0, icon: Briefcase, color: 'text-[#c9b38c]', bg: 'bg-[#c9b38c]/10', trend: 'Recruitment' },
+                    { label: 'Client Inquiries', value: inquiryCount || 0, icon: MessageSquare, color: 'text-slate-600', bg: 'bg-slate-100', trend: 'Reach-outs' },
+                    { label: 'Strategic Briefings', value: blogCount || 0, icon: FileText, color: 'text-slate-600', bg: 'bg-slate-100', trend: 'Authority' },
+                    { label: 'Firm Assets', value: galleryCount || 0, icon: Layers, color: 'text-emerald-500', bg: 'bg-emerald-50', trend: 'Gallery' },
+                ]);
+
+                // Fetch Recent Inquiries
+                const { data: inquiries } = await supabase
+                    .from('contact_inquiries')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                if (inquiries) setRecentInquiries(inquiries);
+
+                // Fetch Upcoming Appointments
+                const { data: appointments } = await supabase
+                    .from('appointments')
+                    .select('*')
+                    .gte('start_time', new Date().toISOString())
+                    .order('start_time', { ascending: true })
+                    .limit(3);
+                if (appointments) setUpcomingAppointments(appointments);
+
+            } catch (err) {
+                console.error("Dashboard error:", err);
+            }
+            setIsLoading(false);
+        };
+        fetchDashboardData();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-40">
+                <Loader2 className="h-10 w-10 text-[#c9b38c] animate-spin mb-4" />
+                <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">Strategic Briefing... Loading Overview</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10">
@@ -45,14 +106,14 @@ export default function DashboardPage() {
                     <p className="text-slate-500 font-light mt-1">Reviewing the practice docket for {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}.</p>
                 </div>
                 <div className="flex gap-4">
-                    <button className="flex items-center gap-3 px-6 py-4 bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-                        <FileText className="h-4 w-4" />
-                        Generate Report
-                    </button>
-                    <button className="flex items-center gap-3 px-8 py-4 bg-[#c9b38c] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#b99c69] transition-all shadow-lg shadow-[#c9b38c]/20">
+                    <Link href="/dashboard/content" className="flex items-center gap-3 px-6 py-4 bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                        <Scale className="h-4 w-4" />
+                        Manage Content
+                    </Link>
+                    <Link href="/dashboard/content" className="flex items-center gap-3 px-8 py-4 bg-[#c9b38c] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#b99c69] transition-all shadow-lg shadow-[#c9b38c]/20">
                         <PlusCircle className="h-4 w-4" />
-                        Initialize Matter
-                    </button>
+                        New Intelligence
+                    </Link>
                 </div>
             </div>
 
@@ -83,70 +144,70 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
-                {/* Recent Matters */}
+                {/* Recent Matters (Inquiries) */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 bg-[#c9b38c]"></div>
-                            <h2 className="text-xl font-serif text-slate-900 leading-none">Active Matters Registry</h2>
+                            <h2 className="text-xl font-serif text-slate-900 leading-none">Incoming Strategic Inquiries</h2>
                         </div>
-                        <Link href="/dashboard/cases" className="text-[10px] font-black text-[#c9b38c] uppercase tracking-[0.2em] hover:underline">Full Docket &rarr;</Link>
+                        <Link href="/dashboard/content" className="text-[10px] font-black text-[#c9b38c] uppercase tracking-[0.2em] hover:underline">Full Log &rarr;</Link>
                     </div>
                     <div className="bg-white border border-slate-100 overflow-hidden shadow-sm">
                         <table className="min-w-full divide-y divide-slate-100">
                             <thead className="bg-[#fafafa]">
                                 <tr>
-                                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Matter Title</th>
-                                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Client</th>
+                                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Client Name</th>
                                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Status</th>
                                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Initiated</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {recentCases.map((item) => (
+                                {recentInquiries.map((item) => (
                                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
                                         <td className="px-8 py-6 whitespace-nowrap">
-                                            <span className="text-sm font-bold text-slate-900 group-hover:text-[#c9b38c] transition-colors">{item.title}</span>
-                                        </td>
-                                        <td className="px-8 py-6 whitespace-nowrap">
-                                            <span className="text-sm text-slate-600 font-medium">{item.client}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-900 group-hover:text-[#c9b38c] transition-colors">{item.name}</span>
+                                                <span className="text-[10px] text-slate-400 italic">{item.email}</span>
+                                            </div>
                                         </td>
                                         <td className="px-8 py-6 whitespace-nowrap">
                                             <span className="px-3 py-1 bg-slate-50 border border-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-500 rounded-none">
-                                                {item.status}
+                                                {item.status || 'New'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 whitespace-nowrap text-sm text-slate-500 font-light font-serif italic text-[12px]">{item.openDate}</td>
+                                        <td className="px-8 py-6 whitespace-nowrap text-sm text-slate-500 font-light font-serif italic text-[12px]">{new Date(item.created_at).toLocaleDateString()}</td>
                                     </tr>
                                 ))}
+                                {recentInquiries.length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} className="px-8 py-20 text-center text-slate-400 italic font-serif opacity-50">No inquiries recorded in the registry.</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                {/* Upcoming Schedule */}
+                {/* Upcoming Schedule / Practice Status */}
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 bg-[#c9b38c]"></div>
                             <h2 className="text-xl font-serif text-slate-900 leading-none">Approaching</h2>
                         </div>
-                        <button className="text-[10px] font-black text-[#c9b38c] uppercase tracking-[0.2em] hover:underline">Calendar</button>
+                        <Link href="/dashboard/appointments" className="text-[10px] font-black text-[#c9b38c] uppercase tracking-[0.2em] hover:underline">Registry</Link>
                     </div>
                     <div className="space-y-4">
-                        {[
-                            { time: '10:00 AM', title: 'Deposition Preparation', client: 'Alice Johnson', type: 'Meeting' },
-                            { time: '02:30 PM', title: 'Court Hearing - Room 402', client: 'Smith Group', type: 'Court' },
-                            { time: '04:00 PM', title: 'Contract Review', client: 'TechFlow', type: 'Review' },
-                        ].map((apt, i) => (
+                        {upcomingAppointments.length > 0 ? upcomingAppointments.map((appt, i) => (
                             <div key={i} className="flex gap-6 p-6 bg-white border border-slate-100 hover:border-[#c9b38c]/30 hover:shadow-lg transition-all group">
                                 <div className="flex-shrink-0 w-20 text-center border-r border-slate-50 pr-6">
-                                    <p className="text-[11px] font-black text-[#c9b38c] uppercase tracking-tighter mb-1">{apt.time.split(' ')[1]}</p>
-                                    <p className="text-lg font-serif italic text-slate-900">{apt.time.split(' ')[0]}</p>
+                                    <p className="text-[11px] font-black text-[#c9b38c] uppercase tracking-tighter mb-1">{new Date(appt.start_time).getHours() >= 12 ? 'PM' : 'AM'}</p>
+                                    <p className="text-lg font-serif italic text-slate-900">{new Date(appt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</p>
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-[#c9b38c] transition-colors">{apt.title}</h4>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject: {apt.client}</p>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-[#c9b38c] transition-colors">{appt.title}</h4>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status: {appt.status}</p>
                                 </div>
                                 <div className="flex-shrink-0">
                                     <div className="p-2 bg-slate-50 group-hover:bg-[#c9b38c]/10 group-hover:text-[#c9b38c] transition-colors">
@@ -154,7 +215,24 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="flex gap-6 p-6 bg-white border border-slate-100 hover:border-[#c9b38c]/30 hover:shadow-lg transition-all group">
+                                <div className="flex-shrink-0 w-20 text-center border-r border-slate-50 pr-6">
+                                    <p className="text-[11px] font-black text-[#c9b38c] uppercase tracking-tighter mb-1">AM</p>
+                                    <p className="text-lg font-serif italic text-slate-900">09:00</p>
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-[#c9b38c] transition-colors">Daily Docket Review</h4>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject: Internal</p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                    <div className="p-2 bg-slate-50 group-hover:bg-[#c9b38c]/10 group-hover:text-[#c9b38c] transition-colors">
+                                        <Clock className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* More schedule items can be added here once a calendar system is implemented */}
                     </div>
 
                     <div className="bg-[#262B3E] p-8 text-center relative overflow-hidden group">

@@ -41,6 +41,7 @@ export default function DashboardLayout({
 
     const navigation = [
         { name: 'Practice Overview', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Website Management', href: '/dashboard/content', icon: FileText },
         { name: 'Legal Pipeline', href: '/dashboard/deals', icon: Briefcase },
         { name: 'All Matters', href: '/dashboard/cases', icon: Gavel },
         { name: 'Client Registry', href: '/dashboard/clients', icon: Users },
@@ -55,7 +56,8 @@ export default function DashboardLayout({
         window.location.href = '/';
     };
 
-    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Legal Adviser';
+    // ENABLE PREVIEW MODE: Use dummy identity if no session found 
+    const userName = user?.user_metadata?.full_name || 'Senior Partner (Demo)';
     const userInitial = userName[0].toUpperCase();
 
     return (

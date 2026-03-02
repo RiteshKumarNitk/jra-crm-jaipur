@@ -27,8 +27,12 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    // refreshing the auth token
-    await supabase.auth.getUser()
+    // refreshing the auth token - wrapped in try-catch to prevent hang during DNS issues
+    try {
+        await supabase.auth.getUser()
+    } catch (e) {
+        console.error('Supabase Auth Check Failed (likely network):', e)
+    }
 
     return supabaseResponse
 }

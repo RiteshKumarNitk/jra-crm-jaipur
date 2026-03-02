@@ -1,16 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { BookOpen } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+
+const GALLERY_FALLBACK = [
+    "https://images.unsplash.com/photo-1505664194779-8beaceb93744",
+    "https://images.unsplash.com/photo-1553484771-047a44f997a9",
+    "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6",
+    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4"
+];
 
 const Gallery = () => {
-    const images = [
-        "https://images.unsplash.com/photo-1505664194779-8beaceb93744",
-        "https://images.unsplash.com/photo-1553484771-047a44f997a9",
-        "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6",
-        "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4"
-    ];
+    const [images, setImages] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchGallery = async () => {
+            try {
+                const { data } = await supabase
+                    .from('gallery_items')
+                    .select('*')
+                    .order('order_index');
+                if (data && data.length > 0) {
+                    setImages(data.map((item: any) => item.image_url));
+                } else {
+                    setImages(GALLERY_FALLBACK);
+                }
+            } catch (err) {
+                setImages(GALLERY_FALLBACK);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchGallery();
+    }, []); // Removed supabase from dependencies to prevent infinite loop
+
+    if (isLoading) return null;
 
     return (
         <section className="py-32 bg-[#fafafa] overflow-hidden">
@@ -36,7 +64,6 @@ const Gallery = () => {
                             fill
                             className="object-cover transition-transform duration-1000 group-hover:scale-110"
                         />
-                        {/* Elegant overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8">
                             <div className="space-y-2 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                                 <span className="text-[#c9b38c] text-[10px] font-bold uppercase tracking-[0.2em]">View Detail</span>

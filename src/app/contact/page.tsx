@@ -16,23 +16,43 @@ const DEFAULT_FIRM = {
 };
 
 export default function ContactPage() {
-    const [firm, setFirm] = useState(DEFAULT_FIRM);
+    const [firm, setFirm] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    // The supabase client is created once when the component mounts.
+    // It is not included in the useEffect dependency array to prevent re-runs.
     const supabase = createClient();
 
     useEffect(() => {
-        const fetchFirm = async () => {
-            const { data } = await supabase
-                .from('website_content')
-                .select('content')
-                .eq('section', 'firm_settings')
-                .maybeSingle();
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch firm settings
+                const { data: firmData } = await supabase
+                    .from('website_content')
+                    .select('content')
+                    .eq('section', 'firm_settings')
+                    .maybeSingle();
 
-            if (data?.content) {
-                setFirm(data.content);
+                if (firmData?.content) {
+                    setFirm(firmData.content);
+                } else {
+                    setFirm(DEFAULT_FIRM);
+                }
+            } catch (err) {
+                console.error("Error fetching content:", err);
+                setFirm(DEFAULT_FIRM);
+            } finally {
+                setIsLoading(false);
             }
         };
-        fetchFirm();
-    }, [supabase]);
+        fetchData();
+    }, []); // Removed supabase from dependencies to prevent infinite loop
+
+    if (isLoading) return (
+        <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="h-10 w-10 border-4 border-[#c9b38c] border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
 
     return (
         <main className="min-h-screen bg-white font-sans overflow-x-hidden">
@@ -143,15 +163,22 @@ export default function ContactPage() {
                             const message = formData.get('message') as string;
 
                             try {
-                                const { createClient } = await import('@/utils/supabase/client');
-                                const supabase = createClient();
                                 const { error } = await supabase.from('contact_inquiries').insert({
-                                    name, email, phone, message
+                                    name,
+                                    email,
+                                    phone,
+                                    subject: 'General Inquiry',
+                                    message,
+                                    status: 'pending'
                                 });
-                                if (error) throw error;
+                                if (error) {
+                                    console.error("Submission error:", error);
+                                    throw error;
+                                }
                                 alert('Inquiry Transmitted Successfully. We will contact you shortly.');
                                 (e.target as HTMLFormElement).reset();
                             } catch (err) {
+                                console.error("Catch block error:", err);
                                 alert('Transmission Error. Please try again.');
                             }
                         }} className="space-y-6">
@@ -206,12 +233,10 @@ export default function ContactPage() {
 
             {/* Map Section */}
             <section className="h-[500px] relative">
-                <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3557.7397637841144!2d75.78712037522432!3d26.9117621766487!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db444f6f4c8e7%3A0xe5a3036329c5a610!2sJagdish%20Enclave!5e0!3m2!1sen!2sin!4v1709110000000!5m2!1sen!2sin"
-                    className="absolute inset-0 w-full h-full border-0 grayscale invert"
+
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2988.1802445120225!2d75.78588409999999!3d26.9028836!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db41304d00001%3A0x9497c644211670c6!2sJRA%20Legal%20Solutions!5e1!3m2!1sen!2sin!4v1772425218259!5m2!1sen!2sin" className="absolute inset-0 w-full h-full border-0 "
                     loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                ></iframe>
+                    referrerPolicy="no-referrer-when-downgrade"></iframe>
             </section>
 
             <Footer />

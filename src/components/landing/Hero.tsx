@@ -27,13 +27,14 @@ const STATIC_SLIDES = [
 
 const Hero = () => {
     const [current, setCurrent] = useState(0);
-    const [slides, setSlides] = useState(STATIC_SLIDES);
+    const [slides, setSlides] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 
     useEffect(() => {
         const fetchHero = async () => {
             try {
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from('website_content')
                     .select('content')
                     .eq('section', 'hero')
@@ -41,15 +42,20 @@ const Hero = () => {
 
                 if (data?.content?.sliders) {
                     setSlides(data.content.sliders);
+                } else {
+                    setSlides(STATIC_SLIDES);
                 }
             } catch (err) {
-                // Silently fallback to static if network is down
+                setSlides(STATIC_SLIDES);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchHero();
-    }, []);
+    }, []); // Removed supabase from dependencies to prevent infinite loop
 
     useEffect(() => {
+        if (slides.length === 0) return;
         const timer = setInterval(() => {
             setCurrent((prev) => (prev + 1) % slides.length);
         }, 6000);
@@ -59,7 +65,14 @@ const Hero = () => {
     const nextSlide = () => setCurrent((prev) => (prev + 1) % (slides.length || 1));
     const prevSlide = () => setCurrent((prev) => (prev - 1 + (slides.length || 1)) % (slides.length || 1));
 
-    if (!slides || slides.length === 0) return null;
+    if (isLoading || !slides || slides.length === 0) return (
+        <section className="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden bg-[#1C202E]">
+            <div className="flex flex-col items-center justify-center">
+                <div className="h-10 w-10 border-4 border-[#c9b38c] border-t-transparent rounded-full animate-spin mb-4" />
+                <span className="text-white/30 text-[10px] uppercase tracking-widest font-bold">Synchronizing...</span>
+            </div>
+        </section>
+    );
 
     return (
         <section className="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden bg-[#1C202E]">

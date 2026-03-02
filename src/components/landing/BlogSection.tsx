@@ -12,52 +12,63 @@ const DEFAULT_INSIGHTS = {
 };
 
 const BlogSection = () => {
-    const [header, setHeader] = useState(DEFAULT_INSIGHTS);
+    const [header, setHeader] = useState<any>(null);
     const [blogs, setBlogs] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 
     useEffect(() => {
         const fetchData = async () => {
-            // Fetch Header
-            const { data: headerData } = await supabase
-                .from('website_content')
-                .select('content')
-                .eq('section', 'insights')
-                .maybeSingle();
+            try {
+                // Fetch Header
+                const { data: headerData } = await supabase
+                    .from('website_content')
+                    .select('content')
+                    .eq('section', 'insights')
+                    .maybeSingle();
 
-            if (headerData?.content) {
-                setHeader(headerData.content);
-            }
+                if (headerData?.content) {
+                    setHeader(headerData.content);
+                } else {
+                    setHeader(DEFAULT_INSIGHTS);
+                }
 
-            // Fetch Latest 2 Blogs
-            const { data: blogData } = await supabase
-                .from('blogs')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(2);
+                // Fetch Latest 2 Blogs
+                const { data: blogData } = await supabase
+                    .from('blogs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(2);
 
-            if (blogData && blogData.length > 0) {
-                setBlogs(blogData);
-            } else {
-                // Fallback blogs if none in DB
-                setBlogs([
-                    {
-                        title: "Provide insight into how canna businesspeople can use",
-                        category: "Advocate, Law",
-                        image_url: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f",
-                        slug: "insight-1"
-                    },
-                    {
-                        title: "Canna Law Blog is a forum for discussing the practical",
-                        category: "Lawyer, Law",
-                        image_url: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da",
-                        slug: "insight-2"
-                    }
-                ]);
+                if (blogData && blogData.length > 0) {
+                    setBlogs(blogData);
+                } else {
+                    // Fallback blogs if none in DB
+                    setBlogs([
+                        {
+                            title: "Provide insight into how canna businesspeople can use",
+                            category: "Advocate, Law",
+                            image_url: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f",
+                            slug: "insight-1"
+                        },
+                        {
+                            title: "Canna Law Blog is a forum for discussing the practical",
+                            category: "Lawyer, Law",
+                            image_url: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da",
+                            slug: "insight-2"
+                        }
+                    ]);
+                }
+            } catch (err) {
+                setHeader(DEFAULT_INSIGHTS);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchData();
-    }, [supabase]);
+    }, []); // Removed supabase from dependencies to prevent infinite loop
+
+    if (isLoading) return null;
 
     return (
         <section className="py-32 px-6 bg-white">

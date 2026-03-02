@@ -118,12 +118,17 @@ export default function ContentManagementPage() {
                     .order('order_index');
                 if (galleryData) setGallery(galleryData);
 
-                // Fetch Inquiries
-                const { data: inquiryData } = await supabase
+                // Fetch Inquiries separately to ensure robustness
+                const { data: inquiryData, error: inquiryError } = await supabase
                     .from('contact_inquiries')
                     .select('*')
                     .order('created_at', { ascending: false });
-                if (inquiryData) setInquiries(inquiryData);
+
+                if (inquiryError) {
+                    console.error("Inquiry fetch error:", inquiryError);
+                } else if (inquiryData) {
+                    setInquiries(inquiryData);
+                }
 
             } catch (err) {
                 console.error("Initial load error:", err);
@@ -170,15 +175,20 @@ export default function ContentManagementPage() {
                     await supabase.from('job_postings').upsert(careers);
                 }
             } else if (activeTab === 'gallery') {
-                const galleryToSave = gallery.map((item, i) => ({
-                    id: item.id || undefined,
-                    title: item.title,
-                    category: item.category,
-                    image_url: item.image_url,
-                    order_index: i
-                }));
+                const galleryToSave = gallery.map((item, i) => {
+                    const obj: any = {
+                        title: item.title || 'Untitled Asset',
+                        category: item.category || 'Firm',
+                        image_url: item.image_url || '',
+                        order_index: i
+                    };
+                    if (item.id) obj.id = item.id;
+                    return obj;
+                });
+
                 if (galleryToSave.length > 0) {
-                    await supabase.from('gallery_items').upsert(galleryToSave);
+                    const { error } = await supabase.from('gallery_items').upsert(galleryToSave);
+                    if (error) throw error;
                 }
             }
             setShowSuccess(true);
@@ -287,6 +297,11 @@ export default function ContentManagementPage() {
                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-3 px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab.id ? 'text-[#c9b38c] bg-white border-t-2 border-[#c9b38c]' : 'text-slate-400 hover:text-slate-600'}`}>
                         <tab.icon className="h-4 w-4" /> {tab.name}
+                        {tab.id === 'inquiries' && inquiries.length > 0 && (
+                            <span className="bg-[#c9b38c] text-white text-[8px] px-1.5 py-0.5 rounded-full ml-1">
+                                {inquiries.length}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>

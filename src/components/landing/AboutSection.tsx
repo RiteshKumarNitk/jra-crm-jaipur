@@ -17,23 +17,34 @@ const DEFAULT_ABOUT = {
 };
 
 const AboutSection = () => {
-    const [content, setContent] = useState(DEFAULT_ABOUT);
+    const [content, setContent] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 
     useEffect(() => {
         const fetchContent = async () => {
-            const { data } = await supabase
-                .from('website_content')
-                .select('content')
-                .eq('section', 'about')
-                .maybeSingle();
+            try {
+                const { data } = await supabase
+                    .from('website_content')
+                    .select('content')
+                    .eq('section', 'about')
+                    .maybeSingle();
 
-            if (data?.content) {
-                setContent(data.content);
+                if (data?.content) {
+                    setContent(data.content);
+                } else {
+                    setContent(DEFAULT_ABOUT);
+                }
+            } catch (err) {
+                setContent(DEFAULT_ABOUT);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchContent();
-    }, [supabase]);
+    }, []); // Removed supabase from dependencies to prevent infinite loop
+
+    if (isLoading) return null;
 
     return (
         <section id="about" className="py-32 px-6 bg-white overflow-hidden">

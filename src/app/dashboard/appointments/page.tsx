@@ -143,8 +143,8 @@ export default function AppointmentsPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-7 gap-2 text-center mb-4">
-                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-                                <span key={d} className="text-[10px] font-black text-slate-300">{d}</span>
+                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                                <span key={`${d}-${i}`} className="text-[10px] font-black text-slate-300">{d}</span>
                             ))}
                         </div>
                         <div className="grid grid-cols-7 gap-2">
@@ -213,8 +213,8 @@ export default function AppointmentsPage() {
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-none border ${appt.status === 'scheduled' ? 'bg-slate-50 text-slate-400 border-slate-100' :
-                                                appt.status === 'completed' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
-                                                    'bg-rose-50 text-rose-500 border-rose-100'
+                                            appt.status === 'completed' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
+                                                'bg-rose-50 text-rose-500 border-rose-100'
                                             }`}>
                                             {appt.status}
                                         </span>

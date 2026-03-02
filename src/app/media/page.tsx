@@ -15,15 +15,22 @@ export default function MediaPage() {
 
     useEffect(() => {
         const fetchMedia = async () => {
-            const { data } = await supabase
-                .from('gallery_items')
-                .select('*')
-                .order('order_index');
-            if (data) setMediaItems(data);
-            setLoading(false);
+            setLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('gallery_items')
+                    .select('*')
+                    .order('order_index');
+                if (error) throw error;
+                if (data) setMediaItems(data);
+            } catch (err) {
+                console.error("Error fetching media:", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchMedia();
-    }, []);
+    }, []); // Removed supabase from dependencies to prevent infinite loop
 
     const getIcon = (type: string) => {
         if (type?.toLowerCase().includes('video')) return Play;

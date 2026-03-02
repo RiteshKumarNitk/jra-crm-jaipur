@@ -11,62 +11,79 @@ export default function DisclaimerModal() {
         const hasAgreed = localStorage.getItem('jra_disclaimer_agreed');
         if (!hasAgreed) {
             setIsOpen(true);
+            document.body.style.overflow = 'hidden';
         }
     }, []);
 
     const handleAgree = () => {
         localStorage.setItem('jra_disclaimer_agreed', 'true');
         setIsOpen(false);
+        document.body.style.overflow = 'unset';
     };
 
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[#0F111A]">
+                    {/* Top Aesthetic Bar */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-[#c9b38c]" />
+
+                    {/* Artistic Watermark */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none overflow-hidden">
+                        <span className="text-[500px] font-serif italic font-black text-white rotate-12">JRA</span>
+                    </div>
+
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                    />
-                    <motion.div
-                        initial={{ scale: 0.95, opacity: 0 }}
+                        initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
-                        className="relative w-full max-w-2xl overflow-hidden rounded-sm bg-white shadow-2xl border border-slate-100"
+                        exit={{ scale: 1.1, opacity: 0 }}
+                        className="relative w-full max-w-3xl m-6 overflow-hidden rounded-sm bg-white shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-slate-100 z-10"
                     >
-                        <div className="bg-[#c9b38c] p-8 text-white text-center">
-                            <div className="h-20 w-20 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm mx-auto mb-6">
-                                <Gavel className="h-10 w-10 text-white" />
+                        {/* Header Header */}
+                        <div className="bg-[#1C202E] p-10 text-white text-center relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12">
+                                <Scale size={120} />
                             </div>
-                            <h2 className="text-2xl font-serif tracking-widest uppercase mb-2">Legal Disclaimer</h2>
-                            <p className="text-[#f1ebd3] text-[10px] font-black uppercase tracking-[0.3em]">Official Circulation Registry</p>
+
+                            <div className="h-24 w-24 rounded-none border border-white/20 flex items-center justify-center rotate-45 mx-auto mb-8 bg-white/5">
+                                <Gavel className="h-10 w-10 text-[#c9b38c] -rotate-45" />
+                            </div>
+
+                            <h2 className="text-3xl font-serif tracking-[0.2em] uppercase mb-3 italic">Legal Protocol Notice</h2>
+                            <div className="flex items-center justify-center gap-4">
+                                <div className="h-[1px] w-8 bg-[#c9b38c]/50" />
+                                <p className="text-[#c9b38c] text-[10px] font-black uppercase tracking-[0.4em]">Official Mandate 2024</p>
+                                <div className="h-[1px] w-8 bg-[#c9b38c]/50" />
+                            </div>
                         </div>
 
-                        <div className="p-10">
-                            <div className="prose prose-slate max-w-none text-base leading-[1.8] text-slate-700 italic font-serif">
-                                <p className="mb-6">
-                                    Please be advised that the following application is intended for private circulation only. While every effort has been taken to ensure the veracity of the information provided, we assume no liability for errors or omissions that may have occurred.
+                        <div className="p-12 md:p-16">
+                            <div className="prose prose-slate max-w-none text-lg md:text-xl leading-[1.8] text-slate-800 italic font-serif text-center">
+                                <p className="mb-8">
+                                    "This digital infrastructure is reserved exclusively for the private consultants and verified partners of JRA Legal Associates."
                                 </p>
-                                <p className="mb-6">
-                                    Strategic decisions should not be based solely on the contents herein. Jurisprudential facts should be cross-referenced with original Government notifications and statutory publications.
-                                </p>
-                                <p>
-                                    Accessing this secure platform signifies your understanding that no lawyer-client relationship is formally established through its use, and the publisher remains held harmless from any ensuing damage or claim.
+                                <p className="mb-0 text-slate-500 text-sm font-sans not-italic uppercase tracking-widest font-black opacity-60">
+                                    Strategic cross-referencing with official RERA publications is mandatory.
                                 </p>
                             </div>
 
-                            <div className="mt-12 flex flex-col items-center gap-8">
-                                <div className="w-20 h-[1px] bg-[#c9b38c]"></div>
+                            <div className="mt-16 flex flex-col items-center gap-10">
                                 <button
                                     onClick={handleAgree}
-                                    className="px-16 py-4 bg-[#c9b38c] hover:bg-[#b99c69] text-white text-[12px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-[#c9b38c]/20"
+                                    className="group relative px-20 py-6 bg-[#c9b38c] overflow-hidden transition-all active:scale-95 shadow-[0_20px_40px_rgba(201,179,140,0.3)] hover:shadow-[0_25px_50px_rgba(201,179,140,0.4)]"
                                 >
-                                    I Acknowledge & Agree
+                                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
+                                    <span className="relative z-10 text-white text-[14px] font-black uppercase tracking-[0.3em]">Authorize Entry & Agree</span>
                                 </button>
-                                <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                                    <ShieldCheck className="h-4 w-4 text-[#c9b38c]" />
-                                    Secure Legal Access
+
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="flex items-center gap-3 text-slate-300 text-[10px] font-black uppercase tracking-[0.4em]">
+                                        <ShieldCheck className="h-4 w-4 text-[#c9b38c]" />
+                                        End-to-End Encryption Active
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-light italic text-center max-w-md">
+                                        Accessing this platform signifies your formal understanding that no lawyer-client relationship is established through its use.
+                                    </p>
                                 </div>
                             </div>
                         </div>

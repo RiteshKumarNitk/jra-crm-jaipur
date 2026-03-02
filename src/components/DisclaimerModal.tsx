@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Scale, Gavel } from 'lucide-react';
+import { insforge } from '@/utils/insforge';
 
 export default function DisclaimerModal() {
     const [isOpen, setIsOpen] = useState(false);

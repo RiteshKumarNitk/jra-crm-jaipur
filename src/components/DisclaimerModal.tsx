@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Scale, Gavel } from 'lucide-react';
 
 export default function DisclaimerModal() {
+    const [isOpen, setIsOpen] = useState(false);
     const [content, setContent] = useState<any>({
         title: "Legal Protocol Notice",
         mandate: "Official Mandate 2024",
